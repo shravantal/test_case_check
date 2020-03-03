@@ -3,9 +3,11 @@ First clone this repository and please add absolute path of check.py file in ~/.
 
     alias check='f(){ python /home/shravank/test_case_check/check.py $1 $*; unset -f f;};f'
 
+Install git module through pip
 
+    pip install gitpython
 
-Then, we can run the check command in both the ways(absolute and relative paths)
+Then, we can run the check command in both the ways(relative and absolute paths)
 
     check stage/configuration/test_mqtt_subscriber_origin.py
 
