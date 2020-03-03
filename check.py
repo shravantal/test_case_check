@@ -1,7 +1,15 @@
-import os, sys, git, random, string, argparse
+import os
+
+# Check if the below package is installed or not, if not installed install through pip
+package = 'git'
+try:
+    __import__(package)
+except ImportError:
+    os.system('pip install gitpython')
+
+import sys, git, random, string
 # PYTEST_MARK_PARAMETRIZE = '@pytest.mark.parametrize'
 # STUB = '@stub'
-
 
 def check_imports_in_alphabetical_order(lines):
     try:
