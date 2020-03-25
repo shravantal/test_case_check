@@ -1,4 +1,8 @@
+import logging
 import os
+import random
+import string
+import sys
 
 # Check if the below package is installed or not, if not installed install through pip
 package = 'git'
@@ -7,9 +11,10 @@ try:
 except ImportError:
     os.system('pip install gitpython')
 
-import sys, git, random, string
-# PYTEST_MARK_PARAMETRIZE = '@pytest.mark.parametrize'
-# STUB = '@stub'
+import git
+
+logger = logging.getLogger(__file__)
+
 
 def check_imports_in_alphabetical_order(lines):
     try:
@@ -24,7 +29,6 @@ def check_imports_in_alphabetical_order(lines):
                 if empty_line_count > 2:
                     break
 
-        #1111111111111111111111111111111111111111111111111111111111111111111111111111111111
         line_count = 0
         imports_start_with_import = []
         for line in imports:
@@ -39,11 +43,8 @@ def check_imports_in_alphabetical_order(lines):
             print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
             print(imports_start_with_import)
 
-        #222222222222222222222222222222222222222222222222222222222222222222222222222222222
         imports_start_with_from = []
         for line in imports[line_count:]:
-        #     print(line)
-        #     print(line.startswith('from'))
             if line.startswith('from'):
                 line_count += 1
                 imports_start_with_from.append(line)
@@ -56,7 +57,6 @@ def check_imports_in_alphabetical_order(lines):
             print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
             print(imports_start_with_from)
 
-        #33333333333333333333333333333333333333333333333333333333333333333333333333333333333333
         # print('sec_imports_start_with_import')
         sec_imports_start_with_import = []
         # print(imports[line_count+1:])
@@ -72,7 +72,6 @@ def check_imports_in_alphabetical_order(lines):
             print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
             print(sec_imports_start_with_import)
 
-        #4444444444444444444444444444444444444444444444444444444444444444444444444444444444444
         sec_imports_start_with_from = []
         for line in imports[line_count:]:
             if line.startswith('from'):
@@ -87,7 +86,6 @@ def check_imports_in_alphabetical_order(lines):
             print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
             print(sec_imports_start_with_from)
     except:
-        # print('in except')
         pass
 
 
@@ -112,7 +110,7 @@ def check_word(lines, word, is_print):
         pass
 
 
-def check_stage_attribute_lines_should_not_modified(tc_lines, test_case, word):
+def check_stage_attribute_lines_should_not_modified(tc_lines, word):
     repo = 'datacollector-tests'
     # It is a trigger for relative path and absolute path of test case file
     # If we use relative path to repo then it's value is True
@@ -132,8 +130,18 @@ def check_stage_attribute_lines_should_not_modified(tc_lines, test_case, word):
         # print(git_output)
         # print(check_word(git_output, word, False))
         is_word_found = check_word(git_output, word, False)[0]
-
-        def verify_stage_attributes_changed():
+        if is_word_found:
+            # print(check_word(tc_lines, "@pytest.mark.parametrize('stage_attributes'", False))
+            start_sa = check_word(tc_lines, word, False)[1][0]
+            end_sa = start_sa
+            while True:
+                end_sa += 1
+                if tc_lines[end_sa] == '@stub\n' or \
+                        tc_lines[end_sa][:len('@pytest.mark')] == '@pytest.mark' or \
+                        tc_lines[end_sa][:len('def test_')] == 'def test_' or \
+                        tc_lines[end_sa][:len('@')] == '@':
+                    break
+            stage_attribute_lines = [line.rstrip() for line in tc_lines[start_sa: end_sa]]
             is_word_changed = False
             for sa_line in stage_attribute_lines:
                 for git_line in git_output:
@@ -146,34 +154,9 @@ def check_stage_attribute_lines_should_not_modified(tc_lines, test_case, word):
                             break
                 if is_word_changed:
                     break
-        if is_word_found:
-            # print(check_word(tc_lines, 'pytest.mark.parametrize', False))
-            pytest_mark_parametrize_lines = check_word(tc_lines, 'pytest.mark.parametrize', False)
-            # print(pytest_mark_parametrize_lines)
-            if len(pytest_mark_parametrize_lines[1]) > 1:
-                start_sa, end_sa = pytest_mark_parametrize_lines[1][:2]
-                stage_attribute_lines = [line.rstrip() for line in tc_lines[start_sa: end_sa]]
-                if stage_attribute_lines[len(stage_attribute_lines) - 1] == '':
-                    stage_attribute_lines = stage_attribute_lines[:len(stage_attribute_lines) - 1]
-                # print(stage_attribute_lines)
-                # print(len(stage_attribute_lines))
-                verify_stage_attributes_changed()
-            elif len(pytest_mark_parametrize_lines[1]) == 1:
-                # print(check_word(tc_lines, test_case, False))
-                test_case_def_line_num = check_word(tc_lines, test_case, False)[1][0]
-                start_sa, end_sa = pytest_mark_parametrize_lines[1][0], test_case_def_line_num
-                # print(start_sa, end_sa)
-                stage_attribute_lines = [line.rstrip() for line in tc_lines[start_sa: end_sa]]
-                verify_stage_attributes_changed()
-                # print(stage_attribute_lines)
-                    # if line in first_char_removed_git_output:
-                    #     # print(line)
-                    #     print('actually stage_attribute got changed')
-            # print(f'\n\t\x1b[1;31m{word} \x1b[0mshould not be modified')
         if not skip_changing_dir:
             os.chdir(previous_cwd)
     except:
-        # print('in except')
         pass
 
 
@@ -267,7 +250,6 @@ def two_blank_lines_before_and_after_fn(lines):
         pass
 
 
-
 def show_warnings_by_pycodestyle(tc_lines, start_line_no):
     try:
         tmp_file_dir = os.path.join('/tmp', 'a_'+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))
@@ -352,7 +334,7 @@ def get_unnecessary_double_quote_lines(tc_lines, start_line_no):
                     continue
                 # print(find_all_indexes_of_ch(tc_lines[line_count-1].split('"')[0], "'"))
             #     print(double_quotes_string)
-                if not "'" in double_quotes_string:
+                if "'" not in double_quotes_string:
                     if not is_not_necessary_double_quotes_found:
                         print(f'\n\t-------------- Remove double quotes in following lines --------------')
                     is_not_necessary_double_quotes_found = True
@@ -404,7 +386,7 @@ def all_fns_in_one_fn(lines, test_case):
         print(f'\n ************** Following corrections are found in the test case \x1b[1;32m{test_case}\x1b[0m **************')
 
         # print(tc_lines)
-        ###### Checking some literals should be present in the test case
+        # Checking some literals should be present in the test case
 
         # print(tc_lines)
         check_word(tc_lines, 'DATA', True)
@@ -416,10 +398,10 @@ def all_fns_in_one_fn(lines, test_case):
     #     print(tc_lines)
         get_words_should_not_be_present(tc_lines, 'print', start_line_no)
 
-        ###### Some fields should not be changed   Ex: stage_attributes in test case
-        check_stage_attribute_lines_should_not_modified(tc_lines, test_case, "@pytest.mark.parametrize('stage_attributes'")
+        # Some fields should not be changed   Ex: stage_attributes in test case
+        check_stage_attribute_lines_should_not_modified(tc_lines, "@pytest.mark.parametrize('stage_attributes'")
 
-        show_warnings_by_pycodestyle(tc_lines, start_line_no)
+        # show_warnings_by_pycodestyle(tc_lines, start_line_no)
         # get_unnecessary_double_quote_lines(tc_lines, start_line_no)
     except:
         pass
@@ -427,9 +409,11 @@ def all_fns_in_one_fn(lines, test_case):
 
 if __name__ == '__main__':
     try:
+        if len(sys.argv) == 1 or sys.argv[1] == '-h':
+            print('Required arguments file_name, test_case_1, test_case_2, ....\n'
+                  'If no test cases are passed, then script will check for all the test cases in the file.')
         file_name = sys.argv[1]
         test_cases = sys.argv[3:]
-        # print(test_cases)
         # Read stage's test cases file
         with open(file_name, 'r') as f:
             lines = f.readlines()
