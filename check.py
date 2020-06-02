@@ -13,69 +13,27 @@ def check_imports_in_alphabetical_order(lines):
         imports = []
         for line in lines:
             if line.startswith('import') or line.startswith('from'):
-                if empty_line_count < 2:
-                    imports.append(line)
-                else:
-                    empty_line_count += 1
-                if empty_line_count > 2:
-                    break
+                imports.append(line.rstrip())
+            elif line == '\n':
+                imports.append(line)
+                empty_line_count += 1
 
-        line_count = 0
-        imports_start_with_import = []
-        for line in imports:
-            if line.startswith('import'):
-                line_count += 1
-                imports_start_with_import.append(line)
-            else:
+            if empty_line_count > 2:
                 break
-        imports_start_with_import = [line.split(' ')[-1].rstrip() for line in imports_start_with_import]
-        # print(imports_start_with_import)
-        if not sorted(imports_start_with_import) == imports_start_with_import:
-            print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
-            print(imports_start_with_import)
 
-        imports_start_with_from = []
-        for line in imports[line_count:]:
-            if line.startswith('from'):
-                line_count += 1
-                imports_start_with_from.append(line)
-            else:
-                break
-        # print(imports_start_with_from)
-        imports_start_with_from = [line.split(' ')[1] for line in imports_start_with_from]
-    #     print(imports_start_with_from)
-        if not sorted(imports_start_with_from) == imports_start_with_from:
-            print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
-            print(imports_start_with_from)
-
-        # print('sec_imports_start_with_import')
-        sec_imports_start_with_import = []
-        # print(imports[line_count+1:])
-        for line in imports[line_count:]:
-            if line.startswith('import'):
-                line_count += 1
-                sec_imports_start_with_import.append(line)
-            else:
-                break
-        sec_imports_start_with_import = [line.split(' ')[-1].rstrip() for line in sec_imports_start_with_import]
-        # print(sec_imports_start_with_import)
-        if not sorted(sec_imports_start_with_import) == sec_imports_start_with_import:
-            print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
-            print(sec_imports_start_with_import)
-
-        sec_imports_start_with_from = []
-        for line in imports[line_count:]:
-            if line.startswith('from'):
-                line_count += 1
-                sec_imports_start_with_from.append(line)
-            else:
-                break
-        # print(sec_imports_start_with_from)
-        sec_imports_start_with_from = [line.split(' ')[1] for line in sec_imports_start_with_from]
-        # print(sec_imports_start_with_from)
-        if not sorted(sec_imports_start_with_from) == sec_imports_start_with_from:
-            print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
-            print(sec_imports_start_with_from)
+        curr_import = imports[0].split(' ')[0]
+        count = 1
+        while count < len(imports):
+            batch_imports = []
+            batch_imports.append(imports[count-1])
+            while imports[count].startswith(curr_import):
+                batch_imports.append(imports[count])
+                count += 1
+            if not sorted(batch_imports) == batch_imports:
+                print(f'\n\t----\x1b[1;31m Please sort below imports in alphabetical order\x1b[0m ----\n\t', end='')
+                print(batch_imports)
+            curr_import = imports[count].split(' ')[0]
+            count += 1
     except:
         pass
 
