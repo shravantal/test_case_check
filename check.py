@@ -4,15 +4,6 @@ import random
 import string
 import sys
 
-# Check if the below package is installed or not, if not installed install through pip
-package = 'git'
-try:
-    __import__(package)
-except ImportError:
-    os.system('pip install gitpython')
-
-import git
-
 logger = logging.getLogger(__file__)
 
 
@@ -124,9 +115,15 @@ def check_stage_attribute_lines_should_not_modified(tc_lines, word):
         if not skip_changing_dir:
             repo_full_path = file_name[:file_name.find(repo)+len(repo)]
             os.chdir(repo_full_path)
-        repo = git.Repo()
-        t = repo.head.commit.tree
-        git_output = repo.git.diff(t).split('\n')
+        # repo = git.Repo()
+        # t = repo.head.commit.tree
+        # git_output = repo.git.diff(t).split('\n')
+        # print(git_output)
+        # result = subprocess.call('git diff', shell=True)
+        git_output = os.popen('git diff').read().split('\n')[:-1]  # Last element coming as empty, so ignoring it.
+
+        # print(result.split('\n'))
+        # print(result)
         # print(git_output)
         # print(check_word(git_output, word, False))
         is_word_found = check_word(git_output, word, False)[0]
@@ -356,6 +353,50 @@ def remove_commented_lines(tc_lines):
     return new_tc_lines
 
 
+def get_functions_other_than_tests(lines):
+    try:
+        all_test_cases = check_word(lines, 'def test', False)[2]
+        all_test_cases = ['test_' + tc.split('(')[0][len('def test') + 1:] for tc in all_test_cases]
+        # print(all_test_cases)
+        all_fucnctions = check_word(lines, 'def ', False)[2]
+        all_fucnctions = [tc.split('(')[0][len('def') + 1:] for tc in all_fucnctions]
+        unnecessary_functions = list(set(all_fucnctions)-set(all_test_cases))
+        if len(unnecessary_functions) > 0:
+            print(f'\n\t-------------- \x1b[1;31mRemove below functions \x1b[0m--------------\n\t', end='')
+            print(unnecessary_functions)
+        print()
+    except:
+        pass
+
+
+def check_arguments_in_alphabetical_order(tc_lines, word):
+    is_word_found = check_word(tc_lines, word, False)[0]
+    if is_word_found:
+        start_sa = check_word(tc_lines, word, False)[1][0]
+        starting_index_of_args = tc_lines[start_sa].index(word)
+        end_sa = start_sa
+        # is_arguments_present_in_next_line = False
+        if ')' not in tc_lines[start_sa][starting_index_of_args:]:
+            while True:
+                end_sa += 1
+                # is_arguments_present_in_next_line = True
+                if ')' in tc_lines[end_sa]:
+                    break
+        arguments_lines = [line.rstrip().lstrip() for line in tc_lines[start_sa: end_sa+1
+                                                                                 # + (1 if is_arguments_present_in_next_line else 0)
+                                                              ]]
+        arguments_lines_str = ' '.join(arguments_lines)
+        starting_index_of_args_str = arguments_lines_str.index(word)
+        arguments_lines_str_with_equal = arguments_lines_str[starting_index_of_args_str+len(word)+1: -1]
+        arguments = [arg.split('=')[0].rstrip().lstrip() for arg in arguments_lines_str_with_equal.split(',')]
+        if '**stage_attributes' in arguments:
+            arguments.pop(arguments.index('**stage_attributes'))
+
+        if not sorted(arguments) == arguments:
+            print(f'\n\t----\x1b[1;31m Please sort below arguments in alphabetical order\x1b[0m ----\n\t', end='')
+            print(arguments)
+
+
 def all_fns_in_one_fn(lines, test_case):
     try:
         get_start_end_lines = get_start_and_end_line_number_of_tc(lines, test_case)
@@ -392,11 +433,16 @@ def all_fns_in_one_fn(lines, test_case):
         check_word(tc_lines, 'DATA', True)
         check_word(tc_lines, 'EXPECTED_OUTPUT', True)
         check_word(tc_lines, 'keep_data', True)
+
+        check_arguments_in_alphabetical_order(tc_lines, '.set_attributes')
         # print()
     #     check_word(lines, 'Pipeline Finisher Executor', True)
 
     #     print(tc_lines)
         get_words_should_not_be_present(tc_lines, 'print', start_line_no)
+        get_words_should_not_be_present(tc_lines, 'string.ascii_letters', start_line_no)
+        get_words_should_not_be_present(tc_lines, 'stage_attributes.update', start_line_no)
+        get_words_should_not_be_present(tc_lines, 'title=', start_line_no)
 
         # Some fields should not be changed   Ex: stage_attributes in test case
         check_stage_attribute_lines_should_not_modified(tc_lines, "@pytest.mark.parametrize('stage_attributes'")
@@ -430,6 +476,8 @@ if __name__ == '__main__':
 
         check_imports_in_alphabetical_order(lines)
         two_blank_lines_before_and_after_fn(lines)
+
+        get_functions_other_than_tests(lines)
         print()
     except:
         pass
